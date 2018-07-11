@@ -35,11 +35,14 @@ func (u *Unit) RequestAndParse(path string, method string, params url.Values) (d
 	}
 
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	content, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
+	err = resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
 	data = make(Response)
 	for _, val := range strings.Split(string(content), ",") {
 		v := strings.Split(val, "=")
