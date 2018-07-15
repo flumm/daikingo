@@ -106,7 +106,51 @@ func (u *Unit) RequestAndParse(path string, method string, params url.Values) (d
 	return
 }
 
-func (u *Unit) SetControlInfo(params url.Values) (data Response, err error) {
+func (u *Unit) SetControlInfo(params url.Values, updateOnDemand bool) (data Response, err error) {
+	needUpdate := false
+	necessaryValues := []string{"pow", "stemp", "mode", "f_rate", "f_dir"}
+	if len(params["shum"]) == 0 {
+		params.Set("shum", "0")
+	}
+
+	for _, k := range necessaryValues {
+		if len(params[k]) == 0 {
+			needUpdate = true
+			break
+		}
+	}
+
+	if needUpdate {
+		if updateOnDemand {
+			data, err = u.GetControlInfo()
+			if err != nil {
+				return nil, err
+			}
+		}
+		for _, k := range necessaryValues {
+			if len(params[k]) == 0 {
+				if updateOnDemand {
+
+					params.Set(k, data[k])
+				} else {
+					var val string
+					switch k {
+					case "stemp":
+						val = string(u.Control.Temperature)
+					case "mode":
+						val = string(u.Control.Mode)
+					case "pow":
+						val = string(u.Control.Power)
+					case "f_dir":
+						val = string(u.Control.FanDir)
+					case "f_rate":
+						val = string(u.Control.FanRate)
+					}
+					params.Set(k, val)
+				}
+			}
+		}
+	}
 	return u.RequestAndParse("/aircon/set_control_info", "GET", params)
 }
 
